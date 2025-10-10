@@ -1,14 +1,41 @@
-import * as React from 'react';
-import { Button } from '@/components/ui/button';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import BoardPage from './pages/BoardPage';
+import { useAuth } from './firebase/useAuth';
+import { AuthProvider } from './firebase/AuthContext';
 
-// Extract the error message
 function App() {
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold">Instance starter</h1>
+    <AuthProvider>
+      <Router>
+        <MainApp />
+      </Router>
+    </AuthProvider>
+  );
+}
+
+function MainApp() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Loading...</p>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/board/:boardId" element={<BoardPage />} />
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
   );
 }
 

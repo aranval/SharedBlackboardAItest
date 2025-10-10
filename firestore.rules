@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /boards/{boardId}/notes/{noteId} {
+      // Anyone can read notes on a board
+      allow read: if true;
+      
+      // Anyone can create a note
+      allow create: if true;
+
+      // Only the author can update or delete their note, or if the note is anonymous
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.author.uid || resource.data.author.uid == 'anonymous');
+    }
+  }
+}

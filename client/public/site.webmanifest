@@ -1,7 +1,7 @@
 {
-  "name": "Instance app",
-  "short_name": "",
-  "description": "",
+  "name": "SharedNotes",
+  "short_name": "SharedNotes",
+  "description": "Private two-person shared notes boards.",
   "start_url": "/",
   "scope": "/",
   "icons": [
@@ -16,8 +16,8 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "background_color": "#111827",
   "display": "standalone",
   "orientation": "portrait-primary",
   "categories": ["productivity", "utilities"]
