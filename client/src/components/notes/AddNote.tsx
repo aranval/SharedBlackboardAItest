@@ -25,7 +25,7 @@ const AddNote: React.FC<AddNoteProps> = ({ boardId }) => {
         createdAt: serverTimestamp(),
         author: user ? {
           uid: user.uid,
-          name: user.displayName,
+          name: user.displayName || 'Authenticated User',
           photoURL: user.photoURL,
         } : {
           uid: 'anonymous',

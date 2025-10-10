@@ -31,7 +31,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, boardId }) => {
   const [editedContent, setEditedContent] = useState(note.content);
   const { user } = useAuth();
 
-  const canModify = user?.uid === note.author.uid || note.author.uid === 'anonymous';
+  const canModify = !user || user?.uid === note.author.uid || note.author.uid === 'anonymous';
 
   const handleDelete = async () => {
     try {
@@ -59,6 +59,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, boardId }) => {
   };
 
   const getInitials = (name: string) => {
+    if (!name) return 'AN';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
