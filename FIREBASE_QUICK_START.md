@@ -4,6 +4,16 @@
 
 ---
 
+## 🚨 GETTING AUTH ERRORS?
+
+**If you see `auth/unauthorized-domain` or `auth/admin-restricted-operation` errors:**
+
+👉 **See `FIREBASE_AUTH_TROUBLESHOOTING.md` for immediate fixes!**
+
+**Quick fix:** Make sure you complete Steps 2, 6, and 7 below correctly.
+
+---
+
 ## ✅ Prerequisites
 
 - ✅ Firebase package already installed (`firebase@12.4.0`)
