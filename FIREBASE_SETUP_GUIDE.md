@@ -4,6 +4,20 @@
 
 ---
 
+## 🚨 TROUBLESHOOTING AUTHENTICATION ERRORS?
+
+**If you're seeing errors like:**
+- ❌ `auth/unauthorized-domain`
+- ❌ `auth/admin-restricted-operation`
+
+**👉 See `FIREBASE_AUTH_TROUBLESHOOTING.md` for quick fixes!**
+
+The most common issues are:
+1. Your domain not being added to Authorized domains (Step 7 below)
+2. Anonymous authentication not being enabled (Step 2 below)
+
+---
+
 ## ✅ Firebase Package Status
 
 **Firebase is already installed!** ✅

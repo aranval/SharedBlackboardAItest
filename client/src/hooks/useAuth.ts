@@ -37,8 +37,18 @@ export function useAuth() {
   const signInWithGoogle = async () => {
     try {
       await signInWithRedirect(auth, googleProvider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in with Google:', error);
+      
+      // Provide helpful error messages
+      if (error?.code === 'auth/unauthorized-domain') {
+        const helpfulError = new Error(
+          'Domain not authorized. Please add your domain to Firebase Console → Authentication → Settings → Authorized domains'
+        );
+        helpfulError.name = 'UnauthorizedDomainError';
+        throw helpfulError;
+      }
+      
       throw error;
     }
   };
@@ -47,8 +57,18 @@ export function useAuth() {
     try {
       const result = await signInAnonymously(auth);
       return result.user;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in anonymously:', error);
+      
+      // Provide helpful error messages
+      if (error?.code === 'auth/admin-restricted-operation') {
+        const helpfulError = new Error(
+          'Anonymous authentication is disabled. Please enable it in Firebase Console → Authentication → Sign-in method → Anonymous'
+        );
+        helpfulError.name = 'AnonymousAuthDisabledError';
+        throw helpfulError;
+      }
+      
       throw error;
     }
   };
