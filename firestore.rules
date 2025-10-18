@@ -1,15 +1,67 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /boards/{boardId}/notes/{noteId} {
-      // Anyone can read notes on a board
-      allow read: if true;
+    
+    // Helper function to check if user is a board member
+    function isBoardMember(boardId) {
+      let board = get(/databases/$(database)/documents/boards/$(boardId));
+      return request.auth != null && request.auth.uid in board.data.members;
+    }
+    
+    // Helper function to check if user created the request
+    function isCreator(createdBy) {
+      return request.auth != null && request.auth.uid == createdBy;
+    }
+    
+    // Helper function to check if user is joining the board (adding only themselves to members)
+    function isJoiningBoard() {
+      let oldMembers = resource.data.members;
+      let newMembers = request.resource.data.members;
+      return request.auth != null 
+        && request.auth.uid in newMembers
+        && !(request.auth.uid in oldMembers)
+        && newMembers.size() == oldMembers.size() + 1
+        && newMembers.hasAll(oldMembers)
+        && newMembers.removeAll(oldMembers) == [request.auth.uid]
+        && request.resource.data.keys().diff(resource.data.keys()).hasOnly(['members'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']);
+    }
+    
+    // Board rules
+    match /boards/{boardId} {
+      // Only board members can read the board
+      allow read: if isBoardMember(boardId);
       
-      // Anyone can create a note
-      allow create: if true;
-
-      // Only the author can update or delete their note, or if the note is anonymous
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.author.uid || resource.data.author.uid == 'anonymous');
+      // Only authenticated users can create boards
+      allow create: if request.auth != null 
+        && request.resource.data.createdBy == request.auth.uid
+        && request.auth.uid in request.resource.data.members;
+      
+      // Users can join by adding themselves to members, OR
+      // Existing members can update mutable fields only (not members or createdBy)
+      allow update: if isJoiningBoard() 
+        || (isBoardMember(boardId) 
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['members', 'createdBy', 'createdAt']));
+      
+      // Only the creator can delete the board
+      allow delete: if isCreator(resource.data.createdBy);
+      
+      // Notes subcollection
+      match /notes/{noteId} {
+        // Only board members can read notes
+        allow read: if isBoardMember(boardId);
+        
+        // Only board members can create notes
+        allow create: if isBoardMember(boardId)
+          && request.resource.data.createdBy == request.auth.uid;
+        
+        // Only board members can update notes
+        allow update: if isBoardMember(boardId);
+        
+        // Only board members can delete notes
+        allow delete: if isBoardMember(boardId);
+      }
     }
   }
 }

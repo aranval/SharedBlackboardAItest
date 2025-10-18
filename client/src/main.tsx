@@ -1,18 +1,5 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './index.css';
-import { FirebaseProvider } from './firebase/FirebaseProvider';
-import { Toaster } from '@/components/ui/sonner';
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./index.css";
 
-// Force dark mode
-document.documentElement.classList.add('dark');
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <FirebaseProvider>
-      <App />
-      <Toaster />
-    </FirebaseProvider>
-  </React.StrictMode>
-);
+createRoot(document.getElementById("root")!).render(<App />);
