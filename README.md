@@ -2,16 +2,29 @@
 
 A beautiful Progressive Web App for real-time shared notes between two users, built with React, Firebase Firestore, and featuring offline support with beautiful pastel colors.
 
-## Features
+## Current Project Status
 
-- 🎨 **Beautiful Pastel Design** - Cozy colors with light and dark mode support
-- 🔄 **Real-time Synchronization** - Changes appear instantly across all devices
-- 📱 **PWA Support** - Install on your phone's home screen
-- 🔌 **Offline Mode** - Full offline support with automatic sync when back online
-- 🔐 **Flexible Authentication** - Google Sign-In or anonymous board access
-- 📝 **Rich Note Features** - Titles, colors, pinning, drag-to-reorder
-- 💾 **Export/Import** - Backup your notes as JSON
-- 🎯 **Board Sharing** - Share with simple board codes
+This repository contains a working PWA (React + Firebase). It does not include the Flutter/Android native application or the Android home screen widget. The PWA can be installed on Android as a home screen app via the browser (Add to Home Screen).
+
+## Features (Implemented)
+
+- 🎨 **Beautiful Pastel Design** - Cozy colors with light and dark mode
+- 🔄 **Real-time Sync** - Firestore listeners update instantly across devices
+- 📱 **PWA Support** - Install to Android/iOS/desktop home screen
+- 🔌 **Offline Mode** - IndexedDB caching + background re-sync
+- 🔐 **Auth Options** - Google Sign-In and anonymous access
+- 📝 **Notes** - Title, content, pastel color, pin/unpin
+- 💾 **Export/Import** - Board JSON export/import
+- 🎯 **Board Sharing** - Join via shareable board code
+
+## Not Yet Implemented
+
+- Drag-and-drop note reordering (pinning groups notes only)
+- Native Android home screen widget (requires native code)
+- Flutter mobile app and APK build
+- Automated tests (unit/integration); manual checklist provided in TESTING.md
+- App icons for PWA (provide `public/icon-192.png` and `public/icon-512.png`)
+- Board deletion UI (rules permit creator delete; UI pending)
 
 ## Firebase Setup
 
@@ -25,6 +38,7 @@ A beautiful Progressive Web App for real-time shared notes between two users, bu
 
 1. In your Firebase project, go to **Authentication** → **Sign-in method**
 2. Enable **Google** sign-in provider
+3. Enable **Anonymous** sign-in provider
 3. Click **Save**
 
 ### 3. Configure Firestore Database
@@ -43,8 +57,8 @@ A beautiful Progressive Web App for real-time shared notes between two users, bu
 ### 5. Configure Authorized Domains
 
 1. Go to **Authentication** → **Settings** → **Authorized domains**
-2. Add your Replit dev URL (e.g., `your-repl-name.repl.co`)
-3. After deployment, add your production domain (e.g., `your-app.replit.app`)
+2. Add your dev URL (e.g., `localhost` for local, your Replit domain)
+3. Add your production domain (e.g., `your-app.replit.app`)
 
 ### 6. Get Firebase Configuration
 
@@ -55,12 +69,17 @@ A beautiful Progressive Web App for real-time shared notes between two users, bu
    - `apiKey`
    - `appId`
 
-### 7. Add Secrets to Replit
+### 7. Configure Environment Variables
 
-The following secrets are already configured (you added them earlier):
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_APP_ID`
+Create a `.env` file in the repository root (or add Replit Secrets):
+
+```
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_API_KEY=your-web-api-key
+VITE_FIREBASE_APP_ID=your-app-id
+```
+
+The client reads these via `client/src/lib/firebase.ts`.
 
 ## How to Use
 
@@ -101,7 +120,7 @@ The following secrets are already configured (you added them earlier):
 
 The app works fully offline thanks to:
 - **Firestore Persistence**: Local caching of all data
-- **Service Worker**: PWA caching for offline access
+- **Service Worker**: PWA caching for offline access (basic cache-first strategy)
 - **Automatic Sync**: Changes sync automatically when back online
 
 ## PWA Installation
@@ -110,6 +129,7 @@ The app works fully offline thanks to:
 1. Open the app in your mobile browser
 2. Look for "Add to Home Screen" or "Install App" prompt
 3. Follow the prompts to install
+4. Add icons at `public/icon-192.png` and `public/icon-512.png` for full install fidelity
 
 ### On Desktop:
 1. Look for the install icon in your browser's address bar
@@ -167,6 +187,9 @@ npm run dev
 
 # Build for production
 npm run build
+
+# Serve production build
+npm start
 ```
 
 ## Tech Stack
@@ -178,16 +201,41 @@ npm run build
 - **State**: React Hooks + Real-time Firestore listeners
 - **PWA**: Service Workers + Web App Manifest
 
+## Data Model
+
+- `boards/{boardId}`: `{ name, createdBy, createdAt, members: string[] }`
+- `boards/{boardId}/notes/{noteId}`: `{ title?, content, color, isPinned, createdBy, createdAt, updatedAt }`
+
+See `client/src/hooks/useBoard.ts` and `client/src/hooks/useNotes.ts`.
+
 ## Known Limitations
 
 1. **Board Security**: Board codes provide access to anyone who has them
 2. **Member Limits**: No enforced limit on board members
 3. **Storage Limits**: Subject to Firestore free tier limits
 4. **Offline Conflicts**: Last write wins in conflict scenarios
+5. **PWA Icons**: Provide app icons in `public/` to avoid default placeholders
+6. **No Native Widget**: Android home screen widget (native) not included
+7. **No Flutter APK**: This repo targets PWA only
+
+## File Map: Where to Configure Things
+
+- `client/src/lib/firebase.ts`: Reads Firebase config from `VITE_FIREBASE_*` env vars
+- `firestore.rules`: Firestore security rules to deploy in Firebase Console
+- `public/manifest.json`: PWA metadata; update name/colors; ensure icons exist
+- `public/sw.js`: Simple cache-first service worker (customize as needed)
+- `client/index.html`: Registers the service worker and loads fonts
+- `client/src/pages/HomePage.tsx`: Create/join board flows and sign-in handling
+- `client/src/pages/BoardPage.tsx`: Main board UI, export/import, settings
+- `client/src/components/*`: UI components (cards, dialogs, header, theme)
+
+## Testing
+
+Automated tests are not yet included. Use the manual end-to-end checklist in `TESTING.md`.
 
 ## License
 
-MIT License - feel free to use this for personal projects!
+MIT — see `LICENSE` in this repository.
 
 ## Support
 
