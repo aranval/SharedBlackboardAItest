@@ -1,202 +1,201 @@
-# Cozy Notes - Shared Notes Board PWA
+# Cozy Notes — Shared Notes Board (PWA)
 
-A beautiful Progressive Web App for real-time shared notes between two users, built with React, Firebase Firestore, and featuring offline support with beautiful pastel colors.
+Cozy Notes is a Progressive Web App for a private, two‑person shared notes board. It uses Firebase Firestore for real‑time sync with offline caching and offers optional Google Sign‑In. The UI is clean, minimal, and pastel‑themed with light/dark mode.
 
-## Features
+## Current Features
 
-- 🎨 **Beautiful Pastel Design** - Cozy colors with light and dark mode support
-- 🔄 **Real-time Synchronization** - Changes appear instantly across all devices
-- 📱 **PWA Support** - Install on your phone's home screen
-- 🔌 **Offline Mode** - Full offline support with automatic sync when back online
-- 🔐 **Flexible Authentication** - Google Sign-In or anonymous board access
-- 📝 **Rich Note Features** - Titles, colors, pinning, drag-to-reorder
-- 💾 **Export/Import** - Backup your notes as JSON
-- 🎯 **Board Sharing** - Share with simple board codes
+- 🎨 **Pastel UI**: Light/dark mode, cozy palette
+- 🔄 **Real‑time sync**: Live updates via Firestore listeners
+- 📱 **PWA install**: Add to home screen, standalone display
+- 🔌 **Offline support**: IndexedDB persistence + service worker
+- 🔐 **Auth**: Google Sign‑In or automatic Anonymous auth
+- 📝 **Notes**: Optional title, content, 5 colors, pin/unpin
+- 💾 **Export / Import**: Board JSON export and import
+- 🎯 **Board sharing**: Join via a shareable board code
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- A Firebase project (Firestore + Authentication enabled)
+
+### Environment variables
+Create a `.env.local` at the repository root (or set env vars in your host):
+
+```bash
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_APP_ID=your-app-id
+```
+
+Notes:
+- Vite reads `VITE_*` env vars at dev/build time. The app consumes these in `client/src/lib/firebase.ts`.
+- Ensure your dev and deploy domains are listed under Firebase Auth → Settings → Authorized domains.
+
+### Install and run (development)
+
+```bash
+npm install
+npm run dev
+```
+
+This starts an Express server with Vite in middleware mode. Open the printed URL.
+
+### Build and serve (production)
+
+```bash
+npm run build   # builds client to dist/public and bundles the server
+npm start       # serves on PORT (default 5000)
+```
 
 ## Firebase Setup
 
-### 1. Create Firebase Project
+1) Create a Firebase project and a Web App
+- In the Firebase console, add a Web app (</>) and note `projectId`, `apiKey`, `appId`.
 
-1. Go to the [Firebase Console](https://console.firebase.google.com/)
-2. Click "Add project" and follow the setup wizard
-3. Once created, click "Add app" and select Web (</>)
+2) Configure Authentication
+- Enable the Google provider in Authentication → Sign‑in method
+- Add authorized domains for local/dev/prod
 
-### 2. Configure Firebase Authentication
+3) Create a Firestore database
+- Start in Production mode
+- Choose a region close to you
 
-1. In your Firebase project, go to **Authentication** → **Sign-in method**
-2. Enable **Google** sign-in provider
-3. Click **Save**
+4) Deploy Firestore rules
+- Open Firestore → Rules, copy the contents of `firestore.rules` from this repo, and Publish
 
-### 3. Configure Firestore Database
+## Security Model (Firestore Rules)
 
-1. Go to **Firestore Database** in the Firebase console
-2. Click "Create database"
-3. Start in **production mode** (we'll add rules next)
-4. Choose a location close to your users
+The rules in `firestore.rules` enforce member‑only access and a safe join flow.
 
-### 4. Add Firestore Security Rules
+- **Authentication requirements**
+  - All operations require Firebase Auth (Google or Anonymous)
+  - Anonymous sign‑in is used transparently when needed
 
-1. In Firestore Database, go to the **Rules** tab
-2. Copy the contents of `firestore.rules` from this project
-3. Click **Publish** to deploy the rules
+- **Board access control**
+  - Only board members can read board and notes data
+  - No board enumeration (reads require membership)
+  - Join by code: users can self‑add only themselves
 
-### 5. Configure Authorized Domains
+- **Allowed operations**
+  - Create: Authenticated user becomes `createdBy` and first member
+  - Read: Members only
+  - Join: Self‑addition only; existing members unchanged
+  - Update: Members can edit mutable fields (not `members`/`createdBy`/`createdAt`)
+  - Delete: Creator only
 
-1. Go to **Authentication** → **Settings** → **Authorized domains**
-2. Add your Replit dev URL (e.g., `your-repl-name.repl.co`)
-3. After deployment, add your production domain (e.g., `your-app.replit.app`)
+- **Immutable fields**
+  - `createdBy`, `createdAt`, and `members` (except self‑join) cannot be changed
 
-### 6. Get Firebase Configuration
+See the rule helpers `isBoardMember(boardId)` and `isJoiningBoard()` in `firestore.rules` for the exact logic.
 
-1. Go to **Project Settings** (gear icon) → **General**
-2. Scroll to "Your apps" and find your web app
-3. In "SDK setup and configuration", note these values:
-   - `projectId`
-   - `apiKey`
-   - `appId`
+Limitations for this MVP:
+- No member removal or explicit invite acceptance flow
+- Board code sharing is trust‑based; anyone with the code can request access (rules still require joining user to be authenticated and only self‑add)
 
-### 7. Add Secrets to Replit
+## Data Model
 
-The following secrets are already configured (you added them earlier):
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_APP_ID`
+- Collection: `boards`
+  - Document: `{boardId}`
+    - Fields: `name: string`, `createdBy: string`, `createdAt: Timestamp`, `members: string[]`
+- Subcollection: `boards/{boardId}/notes`
+  - Document: `{noteId}`
+    - Fields: `title?: string`, `content: string`, `color: 'pink'|'blue'|'lavender'|'mint'|'peach'`, `isPinned: boolean`, `createdBy: string`, `createdAt: Timestamp`, `updatedAt: Timestamp`
 
-## How to Use
+## Using the App
 
-### Creating a Board
+### Home
+- Sign in with Google (optional)
+- Join a board by code
+- Create a new board (anonymous auth is used if not signed in)
 
-1. Click "Create New Board" on the home page
-2. You'll be redirected to your new board with a unique board code
-3. Share the board code with someone to collaborate
+### Board
+- Header actions: Share (copy code/link), Settings (rename, export/import, clear), Theme toggle, Sign out
+- Notes grid: Pinned notes appear first; others are newest‑first
+- Create/Edit: Title (optional), Content, Color, Pin/Unpin
+- Export: Downloads current board’s notes as JSON
+- Import: Upload JSON of notes to add
 
-### Joining a Board
+## Offline and PWA
 
-1. Get a board code from someone
-2. Enter the code on the home page
-3. Click "Join Board"
+- Firestore IndexedDB persistence is enabled for offline data and write queueing
+- Minimal service worker caches core shell files (`/`, `index.html`, `manifest.json`)
+- Automatic sync when the network returns
 
-### Using Google Sign-In (Optional)
+### Install as PWA
+- On Android/iOS: Use “Add to Home Screen” or Install prompt in your browser
+- On Desktop: Look for the install icon in the address bar
 
-1. Click "Sign in with Google"
-2. After signing in, create or join boards
-3. Your identity will be associated with the notes you create
+## Project Structure
 
-### Working with Notes
-
-- **Add Note**: Click the + button (bottom right)
-- **Edit Note**: Hover over a note and click the edit icon
-- **Delete Note**: Hover over a note and click the trash icon
-- **Pin Note**: Hover over a note and click the pin icon
-- **Change Color**: When editing, select from 5 pastel colors
-
-### Board Settings
-
-- **Rename Board**: Settings → Update board name
-- **Export**: Settings → Export Board as JSON
-- **Import**: Settings → Import Board from JSON
-- **Clear**: Settings → Clear All Notes
-
-## Offline Support
-
-The app works fully offline thanks to:
-- **Firestore Persistence**: Local caching of all data
-- **Service Worker**: PWA caching for offline access
-- **Automatic Sync**: Changes sync automatically when back online
-
-## PWA Installation
-
-### On Android/iOS:
-1. Open the app in your mobile browser
-2. Look for "Add to Home Screen" or "Install App" prompt
-3. Follow the prompts to install
-
-### On Desktop:
-1. Look for the install icon in your browser's address bar
-2. Click to install the app
-
-## Firestore Security Rules
-
-The security rules in `firestore.rules` provide comprehensive access control:
-
-### Security Model
-
-**Authentication Requirements:**
-- 🔐 All operations require Firebase Authentication (Google or Anonymous)
-- 👤 Anonymous users are automatically signed in for ease of use
-- 🔄 Users can upgrade from anonymous to Google Sign-In
-
-**Board Access Control:**
-- 👥 Only board members can read board data and notes
-- 🔒 No unauthorized enumeration of boards (privacy-first)
-- 📋 Board codes enable joining when shared by existing members
-
-**Protected Operations:**
-- ✅ **Create**: Authenticated users can create boards and auto-join as members
-- ✅ **Read**: Only board members can view boards and notes
-- ✅ **Join**: Users can add themselves to a board (self-addition only)
-- ✅ **Update**: Members can edit board name and notes (not membership)
-- ✅ **Delete**: Only the board creator can delete the board
-
-**Immutable Fields (Tamper-Proof):**
-- 🛡️ `createdBy` - Board ownership cannot be transferred
-- 🛡️ `createdAt` - Timestamp preserved for audit trail
-- 🛡️ `members` - Can only be modified via secure join flow
-
-**Security Guarantees:**
-- ✅ No membership hijacking (existing members cannot be removed)
-- ✅ No privilege escalation (cannot change board ownership)
-- ✅ No unauthorized access (strict member-only reads)
-- ✅ Safe join flow (users can only add themselves, no bulk additions)
-
-### Recommended Improvements for Production
-- Add member limits per board (currently unlimited)
-- Implement board expiration for inactive boards
-- Add server-side rate limiting
-- Implement explicit invitation system with notifications
-- Add member removal functionality (creator-only)
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
+```text
+client/                 # React app (Vite root)
+  index.html
+  src/
+    App.tsx            # App router and providers
+    main.tsx           # Entry point
+    index.css          # Theme tokens and base styles
+    lib/firebase.ts    # Firebase init + offline persistence
+    hooks/             # useAuth, useBoard, useNotes
+    components/        # UI components and dialogs
+    pages/             # HomePage, BoardPage
+public/
+  manifest.json        # PWA manifest (icons/colors)
+  sw.js                # Minimal service worker
+firestore.rules         # Firestore security rules
+server/                 # Express server & Vite integration
+vite.config.ts          # Vite config (root=client, outDir=dist/public)
+package.json            # Scripts: dev/build/start
 ```
 
-## Tech Stack
+## Configuration Map
 
-- **Frontend**: React + TypeScript + Vite
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Database**: Firebase Firestore
-- **Authentication**: Firebase Auth
-- **State**: React Hooks + Real-time Firestore listeners
-- **PWA**: Service Workers + Web App Manifest
+- `VITE_FIREBASE_PROJECT_ID` → Firebase project ID (env var)
+- `VITE_FIREBASE_API_KEY` → Web API key (env var)
+- `VITE_FIREBASE_APP_ID` → Web app ID (env var)
+- `client/src/lib/firebase.ts` → Reads env and enables IndexedDB persistence
+- `firestore.rules` → Copy to Firebase Console → Firestore → Rules → Publish
+- `public/manifest.json` → Name, colors, icons (replace with your icons)
+- `client/index.html` → Registers `sw.js`
 
-## Known Limitations
+## Known Limitations (current state)
 
-1. **Board Security**: Board codes provide access to anyone who has them
-2. **Member Limits**: No enforced limit on board members
-3. **Storage Limits**: Subject to Firestore free tier limits
-4. **Offline Conflicts**: Last write wins in conflict scenarios
+1. **No Android home screen widget**: This PWA replaces the requested native widget for now
+2. **No drag‑to‑reorder**: Only pin/unpin; non‑pinned are newest‑first
+3. **Member management**: No removal or roles; join is self‑add only
+4. **Board codes**: Anyone with the code can request to join (membership still required for reads)
+5. **Service worker**: Minimal pre‑cache; relies on Firestore’s offline cache for data
+6. **Assets**: Replace manifest icons for production branding
+7. **Tests**: Automated tests not yet included (see checklist below)
+
+## E2E Test Checklist (manual)
+
+- **Auth**
+  - Fresh browser: create board → anonymous sign‑in occurs
+  - Google Sign‑In succeeds and user appears in header
+- **Board**
+  - Create board → code saved to localStorage → route `/board/:id`
+  - Join board with code from a second browser/device
+  - Rename board (Settings) persists across devices
+- **Notes**
+  - Add, edit, delete, pin/unpin; updates appear on second device
+  - Export JSON downloads; Import JSON creates notes
+- **Offline**
+  - Go offline → add/edit notes → reconnect → changes sync
+- **Security** (with rules deployed)
+  - Non‑member cannot read `boards/:id` or its `notes`
+  - Member cannot modify `members`, `createdBy`, `createdAt`
+  - Join flow allows only self‑addition; existing members unaffected
+- **PWA**
+  - Install prompt appears; app launches standalone; theme color applies
 
 ## License
 
-MIT License - feel free to use this for personal projects!
+MIT — see `package.json` license field. Add a `LICENSE` file with MIT text if you need an explicit file.
 
-## Support
+## Troubleshooting
 
-For issues or questions:
-1. Check the Firebase Console for errors
-2. Check browser console for client-side errors
-3. Verify Firestore rules are correctly deployed
-4. Ensure authorized domains are configured
-
----
-
-Built with ❤️ using React, Firebase, and cozy pastel colors
+- Check Firebase Console: Auth domains, Rules published, errors in Logs
+- Check browser console/network tab for client errors
+- Verify env variables are present at dev/build time
+- Ensure your dev/prod hosts are in Firebase Auth → Authorized domains
